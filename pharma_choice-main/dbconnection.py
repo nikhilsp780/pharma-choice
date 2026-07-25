@@ -5,6 +5,6 @@ class Database:
         return mysql.connector.connect(
             host="127.0.0.1",
             user="root",
-            password="Nikhil@2003",
+            password="Nick@gt",
             database="pharma_choice_db"
         )
