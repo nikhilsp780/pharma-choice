@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cart - Pharma Choice</title>
+    <link href="../static/css/style.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; }
+        
+        .navbar {
+            background: #1a1a2e;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .navbar a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; transition: background 0.3s; }
+        .navbar a:hover { background: #e94560; }
+        
+        .container { max-width: 1200px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #1a1a2e; border-bottom: 2px solid #e94560; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #1a1a2e; color: white; padding: 12px; text-align: left; }
+        .data-table td { padding: 10px; border-bottom: 1px solid #ddd; }
+        .data-table tr:hover { background: #f5f5f5; }
+        
+        .btn-remove { background: #dc3545; color: white; padding: 5px 10px; text-decoration: none; border-radius: 5px; font-size: 12px; border: none; cursor: pointer; }
+        .btn-remove:hover { background: #b02a37; }
+        
+        .cart-actions { display: flex; justify-content: space-between; margin-top: 20px; gap: 15px; }
+        .btn-continue { background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }
+        .btn-checkout { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .btn-checkout:hover { background: #1e7e34; }
+        
+        .empty-cart { text-align: center; padding: 50px; }
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* Payment Modal Styles */
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .payment-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 450px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .payment-modal-content h3 { color: #1a1a2e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .close-modal { cursor: pointer; font-size: 24px; color: #999; transition: color 0.2s; }
+        .close-modal:hover { color: #e94560; }
+        .payment-amount { background: #f0f2f5; padding: 15px; border-radius: 10px; text-align: center; margin: 15px 0; font-size: 20px; font-weight: bold; color: #e94560; }
+        
+        /* Payment Method Tabs */
+        .payment-tabs { display: flex; gap: 10px; margin: 20px 0; border-bottom: 2px solid #eee; }
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-radius: 8px 8px 0 0;
+        }
+        .tab-btn.active { color: #e94560; border-bottom: 3px solid #e94560; background: #fff0f3; }
+        .tab-btn:hover { color: #e94560; }
+        
+        /* Payment Panels */
+        .payment-panel { display: none; padding: 20px 0; }
+        .payment-panel.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; font-size: 13px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; transition: border 0.2s; }
+        .form-group input:focus { outline: none; border-color: #e94560; box-shadow: 0 0 0 2px rgba(233,69,96,0.2); }
+        
+        .upi-options { display: flex; gap: 10px; margin-bottom: 15px; }
+        .upi-app { flex: 1; text-align: center; padding: 12px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .upi-app.selected { border-color: #e94560; background: #fff0f3; }
+        .upi-app:hover { border-color: #e94560; }
+        
+        .card-row { display: flex; gap: 15px; }
+        .card-row .form-group { flex: 1; }
+        
+        .btn-pay {
+            width: 100%;
+            padding: 14px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        .btn-pay:hover { background: #1e7e34; }
+        
+        .netbanking-options { display: flex; flex-direction: column; gap: 10px; }
+        .bank-option { display: flex; align-items: center; gap: 15px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .bank-option.selected { border-color: #e94560; background: #fff0f3; }
+        .bank-option:hover { border-color: #e94560; }
+        .bank-option input { width: auto; margin: 0; }
+        
+        .secure-badge { text-align: center; margin-top: 15px; font-size: 12px; color: #666; display: flex; justify-content: center; gap: 10px; }
+        
+        @media (max-width: 768px) {
+            .cart-actions { flex-direction: column; }
+            .card-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/user/dashboard">Dashboard</a>
+        <a href="/user/drugs">All Drugs</a>
+        <a href="/user/cart">Cart</a>
+        <a href="/user/myorders">My Orders</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="container">
+        <h2>🛒 My Cart</h2>
+        
+        <div id="flashMessages"></div>
+        <div id="cartContent">
+            <div style="text-align: center; padding: 50px;">Loading cart...</div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="payment-modal">
+        <div class="payment-modal-content">
+            <h3>
+                💳 Complete Payment
+                <span class="close-modal" onclick="closePaymentModal()">&times;</span>
+            </h3>
+            <div class="payment-amount" id="paymentAmount">Total: ₹0</div>
+            
+            <!-- Payment Method Tabs -->
+            <div class="payment-tabs">
+                <button class="tab-btn active" data-panel="upi">📱 UPI</button>
+                <button class="tab-btn" data-panel="card">💳 Card</button>
+                <button class="tab-btn" data-panel="netbanking">🏦 Net Banking</button>
+            </div>
+            
+            <!-- UPI Panel -->
+            <div id="upiPanel" class="payment-panel active">
+                <div class="upi-options">
+                    <div class="upi-app" data-app="PhonePe">📱 PhonePe</div>
+                    <div class="upi-app" data-app="Google Pay">🟢 Google Pay</div>
+                    <div class="upi-app" data-app="Paytm">💙 Paytm</div>
+                    <div class="upi-app" data-app="Amazon Pay">📦 Amazon Pay</div>
+                </div>
+                <div class="form-group">
+                    <label>UPI ID / VPA</label>
+                    <input type="text" id="upiId" placeholder="username@okhdfcbank or 9876543210@paytm">
+                </div>
+                <div class="secure-badge">
+                    <span>🔒 UPI Secure</span>
+                    <span>⚡ Instant Payment</span>
+                </div>
+                <button class="btn-pay" onclick="processPayment('UPI')">✅ Pay Now via UPI</button>
+            </div>
+            
+            <!-- Card Panel -->
+            <div id="cardPanel" class="payment-panel">
+                <div class="form-group">
+                    <label>Card Number</label>
+                    <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>Expiry Date</label>
+                        <input type="text" id="expiry" placeholder="MM/YY" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label>CVV</label>
+                        <input type="password" id="cvv" placeholder="123" maxlength="4">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Cardholder Name</label>
+                    <input type="text" id="cardName" placeholder="Name on card">
+                </div>
+                <div class="secure-badge">
+                    <span>🔒 PCI DSS Compliant</span>
+                    <span>💳 Visa / Mastercard / RuPay</span>
+                </div>
+                <button class="btn-pay" onclick="processPayment('Card')">💳 Pay Now via Card</button>
+            </div>
+            
+            <!-- Net Banking Panel -->
+            <div id="netbankingPanel" class="payment-panel">
+                <div class="netbanking-options">
+                    <div class="bank-option" data-bank="SBI">
+                        <input type="radio" name="bank" value="SBI"> 🏦 State Bank of India
+                    </div>
+                    <div class="bank-option" data-bank="HDFC">
+                        <input type="radio" name="bank" value="HDFC"> 🏦 HDFC Bank
+                    </div>
+                    <div class="bank-option" data-bank="ICICI">
+                        <input type="radio" name="bank" value="ICICI"> 🏦 ICICI Bank
+                    </div>
+                    <div class="bank-option" data-bank="Axis">
+                        <input type="radio" name="bank" value="Axis"> 🏦 Axis Bank
+                    </div>
+                    <div class="bank-option" data-bank="Kotak">
+                        <input type="radio" name="bank" value="Kotak"> 🏦 Kotak Mahindra Bank
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Net Banking ID / Customer ID</label>
+                    <input type="text" id="netbankingId" placeholder="Enter your customer ID">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="netbankingPassword" placeholder="Enter your password">
+                </div>
+                <div class="secure-badge">
+                    <span>🔒 256-bit SSL Secure</span>
+                    <span>🏦 All Major Banks</span>
+                </div>
+                <button class="btn-pay" onclick="processPayment('Net Banking')">🏦 Pay Now via Net Banking</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCartTotal = 0;
+        let selectedUpiApp = 'PhonePe';
+        let selectedBank = 'SBI';
+
+        function showFlash(message, type) {
+            const flashDiv = document.getElementById('flashMessages');
+            flashDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => { if(flashDiv) flashDiv.innerHTML = ''; }, 3000);
+        }
+
+        function loadCart() {
+            fetch('/user/cart/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('cartContent').innerHTML = `<div class="empty-cart"><p>${data.error}</p><a href="/user/drugs" class="btn-continue">Start Shopping</a></div>`;
+                        return;
+                    }
+                    
+                    currentCartTotal = data.total;
+                    
+                    if (data.cart_items.length === 0) {
+                        document.getElementById('cartContent').innerHTML = `<div class="empty-cart"><p>Your cart is empty.</p><a href="/user/drugs" class="btn-continue">Start Shopping</a></div>`;
+                        return;
+                    }
+                    
+                    let html = '<table class="data-table"><thead><tr><th>Drug Name</th><th>Category</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th></tr></thead><tbody>';
+                    
+                    data.cart_items.forEach(item => {
+                        html += `<tr>
+                            <td>${item.drug_name}</td>
+                            <td>${item.category}</td>
+                            <td>${item.quantity}</td>
+                            <td>₹${item.final_price}</td>
+                            <td>₹${item.item_total}</td>
+                            <td><button class="btn-remove" onclick="removeFromCart(${item.cart_id})">Remove</button></td>
+                         </tr>`;
+                    });
+                    
+                    html += `</tbody><tfoot><tr><td colspan="4"><strong>Grand Total</strong></td><td colspan="2"><strong>₹${data.total}</strong></td></tr></tfoot></table>`;
+                    html += `<div class="cart-actions">
+                        <a href="/user/drugs" class="btn-continue">Continue Shopping</a>
+                        <button class="btn-checkout" onclick="showPaymentModal()">Proceed to Checkout</button>
+                    </div>`;
+                    
+                    document.getElementById('cartContent').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('cartContent').innerHTML = '<div class="empty-cart"><p>Error loading cart</p></div>';
+                });
+        }
+
+        function removeFromCart(cartId) {
+            fetch(`/user/removefromcart/${cartId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showFlash(data.message, 'success');
+                        loadCart();
+                        updateCartCount();
+                    } else {
+                        showFlash(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showFlash('Error removing item', 'error');
+                });
+        }
+
+        function updateCartCount() {
+            fetch('/api/cart/count')
+                .then(response => response.json())
+                .then(data => {
+                    const cartCountElem = document.getElementById('cartCount');
+                    if (cartCountElem) cartCountElem.innerHTML = data.count;
+                })
+                .catch(error => console.log('Error:', error));
+        }
+
+        function showPaymentModal() {
+            if (currentCartTotal === 0) {
+                showFlash('Cart is empty!', 'error');
+                return;
+            }
+            document.getElementById('paymentAmount').innerHTML = `Total: ₹${currentCartTotal.toFixed(2)}`;
+            document.getElementById('paymentModal').style.display = 'flex';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+            // Reset forms
+            document.getElementById('upiId').value = '';
+            document.getElementById('cardNumber').value = '';
+            document.getElementById('expiry').value = '';
+            document.getElementById('cvv').value = '';
+            document.getElementById('cardName').value = '';
+            document.getElementById('netbankingId').value = '';
+            document.getElementById('netbankingPassword').value = '';
+        }
+
+        function processPayment(method) {
+            let paymentDetail = '';
+            let isValid = true;
+            
+            if (method === 'UPI') {
+                const upiId = document.getElementById('upiId').value.trim();
+                if (!upiId) {
+                    showFlash('Please enter UPI ID', 'error');
+                    isValid = false;
+                } else {
+                    paymentDetail = `${selectedUpiApp} - ${upiId}`;
+                }
+            } 
+            else if (method === 'Card') {
+                const cardNum = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                const expiry = document.getElementById('expiry').value;
+                const cvv = document.getElementById('cvv').value;
+                const cardName = document.getElementById('cardName').value.trim();
+                
+                if (!cardNum || cardNum.length < 13) {
+                    showFlash('Please enter valid card number', 'error');
+                    isValid = false;
+                } else if (!expiry || !expiry.match(/^\d{2}\/\d{2}$/)) {
+                    showFlash('Please enter valid expiry (MM/YY)', 'error');
+                    isValid = false;
+                } else if (!cvv || cvv.length < 3) {
+                    showFlash('Please enter valid CVV', 'error');
+                    isValid = false;
+                } else if (!cardName) {
+                    showFlash('Please enter cardholder name', 'error');
+                    isValid = false;
+                } else {
+                    paymentDetail = `Card ending with ${cardNum.slice(-4)}`;
+                }
+            } 
+            else if (method === 'Net Banking') {
+                const netId = document.getElementById('netbankingId').value.trim();
+                const netPass = document.getElementById('netbankingPassword').value;
+                
+                if (!netId) {
+                    showFlash('Please enter Customer ID', 'error');
+                    isValid = false;
+                } else if (!netPass) {
+                    showFlash('Please enter password', 'error');
+                    isValid = false;
+                } else {
+                    paymentDetail = `${selectedBank} Bank - ${netId}`;
+                }
+            }
+            
+            if (!isValid) return;
+            
+            // Process payment
+            fetch('/user/checkout', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    payment_method: method,
+                    payment_detail: paymentDetail,
+                    amount: currentCartTotal
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                closePaymentModal();
+                if (data.success) {
+                    showFlash(`✅ ${data.message}`, 'success');
+                    loadCart();
+                    updateCartCount();
+                    // Redirect to orders page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/user/myorders';
+                    }, 1500);
+                } else {
+                    showFlash(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                closePaymentModal();
+                console.error('Error:', error);
+                showFlash('Payment failed! Please try again.', 'error');
+            });
+        }
+
+        // Initialize payment modal tabs
+        function initPaymentTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const panels = {
+                'upi': document.getElementById('upiPanel'),
+                'card': document.getElementById('cardPanel'),
+                'netbanking': document.getElementById('netbankingPanel')
+            };
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const panelId = btn.getAttribute('data-panel');
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    Object.values(panels).forEach(panel => panel.classList.remove('active'));
+                    panels[panelId].classList.add('active');
+                });
+            });
+            
+            // UPI app selection
+            const upiApps = document.querySelectorAll('.upi-app');
+            upiApps.forEach(app => {
+                app.addEventListener('click', () => {
+                    upiApps.forEach(a => a.classList.remove('selected'));
+                    app.classList.add('selected');
+                    selectedUpiApp = app.getAttribute('data-app');
+                });
+            });
+            
+            // Bank selection
+            const bankOptions = document.querySelectorAll('.bank-option');
+            bankOptions.forEach(bank => {
+                bank.addEventListener('click', () => {
+                    const radio = bank.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    bankOptions.forEach(b => b.classList.remove('selected'));
+                    bank.classList.add('selected');
+                    selectedBank = radio.value;
+                });
+            });
+        }
+
+        // Format card number with spaces
+        function formatCardNumber() {
+            const cardInput = document.getElementById('cardNumber');
+            if (cardInput) {
+                cardInput.addEventListener('input', function(e) {
+                    let val = e.target.value.replace(/\s/g, '');
+                    if (val.length > 16) val = val.slice(0, 16);
+                    let formatted = '';
+                    for (let i = 0; i < val.length; i++) {
+                        if (i > 0 && i % 4 === 0) formatted += ' ';
+                        formatted += val[i];
+                    }
+                    e.target.value = formatted;
+                });
+            }
+        }
+
+        // Format expiry
+        function formatExpiry() {
+            const expiryInput = document.getElementById('expiry');
+            if (expiryInput) {
+                expiryInput.addEventListener('input', function(e) {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length >= 2) {
+                        val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                    }
+                    e.target.value = val;
+                });
+            }
+        }
+
+        // Load cart on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCart();
+            initPaymentTabs();
+            formatCardNumber();
+            formatExpiry();
+        });
+    </script>
+</body>
+</html>
